@@ -2,7 +2,7 @@
 import RPi.GPIO as GPIO # import RPi GPIO library
 from threading import Thread
 from playsound import playsound	#library for playing sound
-
+import time
 
 GPIO.setmode(GPIO.BOARD) #use physical pin numbering
 GPIO.setwarnings(False) #disable warnings
@@ -34,8 +34,10 @@ class GPIO_pins():
 	def flippers():
 		while (True):
 			if (GPIO.input(3)==GPIO.LOW):
+				time.sleep(0.2)
 				pwm1.ChangeDutyCycle(50)
 			elif (GPIO.input(5)==GPIO.LOW):
+				time.sleep(0.2)
 				pwm2.ChangeDutyCycle(50)
 			else
 				pwm1.ChangeDutyCycle(100)
@@ -45,6 +47,7 @@ class GPIO_pins():
 		while (True):
 			if ((GPIO.input(10) or GPIO.input(11) or GPIO.input(12) or GPIO.input(13))==GPIO.HIGH):	#if ball touches pop bumper1,2,3,4
 				print("Pop Bumper")
+				global score
 				score=score+100
 				#playsound('bumpers.mp3', block=False)
 
@@ -52,6 +55,7 @@ class GPIO_pins():
 		while (True):
 			if ((GPIO.input(15) or GPIO.input(16))==GPIO.HIGH):
 				print("slingshots")
+				global score
 				score=score+200
 				#playsound('slingshots.mp3', block=False)
 
@@ -60,6 +64,7 @@ class GPIO_pins():
 		while (True):
 			if GPIO.input(18)==GPIO.HIGH:	#if ball rolls over area1
 				print("area1")
+				global score
 				score=score+200
 				#playsound('area.mp3', block=False)
 
@@ -67,6 +72,7 @@ class GPIO_pins():
 		while (True):
 			if (GPIO.input(19)==GPIO.HIGH):	#if ball rolls over area3
 				print("area2")
+				global score
 				score=score+300
 				#playsound('area.mp3', block=False)
 
@@ -74,6 +80,7 @@ class GPIO_pins():
 		while (True):
 			if (GPIO.input(21)==GPIO.HIGH):	#if ball rolls over area3
 				print("area3")
+				global score
 				score=score+500
 				#playsound('area.mp3', block=False)
 
@@ -81,6 +88,7 @@ class GPIO_pins():
 		while (True):
 			if(GPIO.input(22)==GPIO.HIGH):	#if ball hits targets
 				print("targets")
+				global score
 				score=score+2000
 				#playsound('target.mp3', block=False)
 
