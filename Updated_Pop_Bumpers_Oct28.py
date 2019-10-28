@@ -1,6 +1,7 @@
 #needed for gpio
 import RPi.GPIO as GPIO # import RPi GPIO library
 from threading import Thread
+from threading import Timer
 import time
 
 GPIO.setmode(GPIO.BOARD) #use physical pin numbering
@@ -16,11 +17,11 @@ GPIO.setup(5,GPIO.IN, pull_up_down=GPIO.PUD_DOWN)   #Right Flipper Input (EOS Sw
 GPIO.setup(7,GPIO.OUT)                              #Left Flipper Output (PWM)
 GPIO.setup(8,GPIO.OUT)                              #Right Flipper Output (PWM)
 
-#Set PWM on pins 7 & 8 to 100,000 Hz. Start at 100% PWM
-pwm1=GPIO.PWM(7, 1e+5)
-pwm2=GPIO.PWM(8, 1e+5)
-pwm1.start(100)
-pwm2.start(100)
+#Set PWM on pins 7 & 8 to 1,000 Hz. Start at 50% PWM
+pwm1=GPIO.PWM(7, 1000)
+pwm2=GPIO.PWM(8, 1000)
+pwm1.start(50)
+pwm2.start(50)
 
 ##input channels for playfield_parts
 GPIO.setup(15, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)     #Slingshot 1 Input (Points)
@@ -31,7 +32,7 @@ GPIO.setup(21, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)     #Rollover Area 3 (Points
 GPIO.setup(22, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)     #Target (Points)
 
 class GPIO_pins():
-
+    
     def flippers():
             ##If there is a high to low transition, the flipper bat is up. Wait 200ms then lower PWM.
             ##  else the flipper bat is down, return pwm to 100%
@@ -42,25 +43,23 @@ class GPIO_pins():
         while (True):
             if (GPIO.input(3)==GPIO.LOW) or (GPIO.input(5)==GPIO.LOW):
                 if(GPIO.input(3)==GPIO.LOW):
-                    time.sleep(0.2)
-                    pwm1.ChangeDutyCycle(50)
+                    pwm1.ChangeDutyCycle(10)
                 else:
-                    time.sleep(0.2)
-                    pwm2.ChangeDutyCycle(50)
+                    pwm2.ChangeDutyCycle(10)
             if(GPIO.input(3)==GPIO.HIGH) or (GPIO.input(5)==GPIO.HIGH):
                 if(GPIO.input(3)==GPIO.HIGH):
-                    pwm1.ChangeDutyCycle(100)
+                    pwm1.ChangeDutyCycle(50)
                 else:
-                    pwm2.ChangeDutyCycle(100)
+                    pwm2.ChangeDutyCycle(50)
 
     def pop_bumpers():
+        def boolTimer(timeUp):
+            return not timeUp
+            
         zeroCount = 0
         lowHigh = True  #Start by looking for a low to high transition (switch pressed)
         highLow = False #Use for after low to high transition detected
-        alarm=threading.Timer(0.1,boolTimer,timeUp)
-        
-        def boolTimer(timeUp):
-            return not timeUp
+        alarm=Timer(0.1,boolTimer,timeUp)
             
         while (True):
             if ((GPIO.input(10) or GPIO.input(11) or GPIO.input(12) or GPIO.input(13))==GPIO.HIGH): #if ball touches any of the 4 pop bumpers
@@ -144,9 +143,11 @@ class GPIO_pins():
 
 
     if __name__=='__main__': #start threads asynchronously
-        Thread(target=pop_bumpers).start()
+        score=0
+        Thread(target=pop_bumpers,args=(score,)).start()
+        Thread(target=flippers).start()
         #Thread(target=targets).start()
         #Thread(target=area1).start()
         #Thread(target=area2).start()
         #Thread(target=area3).start()
-        #Thread(target=flippers).start()
+        
