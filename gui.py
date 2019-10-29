@@ -10,7 +10,6 @@ from PIL import ImageTk
 class App():
 	def __init__(self, master):
 		#initialization
-		global score
 		self.master=master
 		scrwidth=master.winfo_screenwidth()
 		scrheight = master.winfo_screenheight()

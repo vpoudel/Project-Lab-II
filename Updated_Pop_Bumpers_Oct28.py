@@ -32,14 +32,16 @@ GPIO.setup(21, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)     #Rollover Area 3 (Points
 GPIO.setup(22, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)     #Target (Points)
 
 class GPIO_pins():
-    
+    def __init__(self):
+        score=0
+
     def flippers():
             ##If there is a high to low transition, the flipper bat is up. Wait 200ms then lower PWM.
             ##  else the flipper bat is down, return pwm to 100%
 
             ##  Nested if statements to ensure that each individual pwm can change from 50% to 100%
             ##  independently from each other
-            
+
         while (True):
             if (GPIO.input(3)==GPIO.LOW) or (GPIO.input(5)==GPIO.LOW):
                 if(GPIO.input(3)==GPIO.LOW):
@@ -52,15 +54,15 @@ class GPIO_pins():
                 else:
                     pwm2.ChangeDutyCycle(50)
 
-    def pop_bumpers():
+    def pop_bumpers(score):
         def boolTimer(timeUp):
             return not timeUp
-            
+
         zeroCount = 0
         lowHigh = True  #Start by looking for a low to high transition (switch pressed)
         highLow = False #Use for after low to high transition detected
         alarm=Timer(0.1,boolTimer,timeUp)
-            
+
         while (True):
             if ((GPIO.input(10) or GPIO.input(11) or GPIO.input(12) or GPIO.input(13))==GPIO.HIGH): #if ball touches any of the 4 pop bumpers
                 #Nested ifs to track only the transitions we are looking for
@@ -73,7 +75,7 @@ class GPIO_pins():
                             alarm.start()
                         else:
                             alarm.start()
-                        
+
                 if(highLow):
                     if((GPIO.input(10) or GPIO.input(11) or GPIO.input(12) or GPIO.input(13))==GPIO.LOW):
                         lowHigh=True
@@ -87,7 +89,7 @@ class GPIO_pins():
                             alarm.start()
 
                 if(zeroCount>=3):   #Only increase score after a certain number of zeros
-                    score=score+100
+                    score=score+500
                     zeroCount=0     #Reset zeroCount
                     lowHigh=True    #Make sure Booleans are correctly reset
                     highLow=False
@@ -97,8 +99,8 @@ class GPIO_pins():
                     lowHigh=True    #Make sure Booleans are correctly reset
                     highLow=False
                     timeUp=False    #Reset Timer variable
-    
-    
+        return score
+
     def slingshots():
         while (True):
             if ((GPIO.input(15) or GPIO.input(16))==GPIO.HIGH):
@@ -143,11 +145,38 @@ class GPIO_pins():
 
 
     if __name__=='__main__': #start threads asynchronously
-        score=0
         Thread(target=pop_bumpers,args=(score,)).start()
         Thread(target=flippers).start()
         #Thread(target=targets).start()
         #Thread(target=area1).start()
         #Thread(target=area2).start()
         #Thread(target=area3).start()
-        
+
+
+    class App():
+    	def __init__(self, master):
+    		#initialization
+            score=GPIO_pins.score
+    		self.master=master
+    		scrwidth=master.winfo_screenwidth()
+    		scrheight = master.winfo_screenheight()
+    		master.title("Pinball")
+
+    		#canvas large
+    		Canvas(master).pack()
+    		self.back_image=ImageTk.PhotoImage(Image.open('wall.jpg'))
+    		Label(master, image=self.back_image).place(relwidth=1,relheight=1)
+
+
+    		#Frame inside canvas
+    		frame=Frame(master, height=scrheight/10, width=scrwidth/4, bg='white', bd=5)
+    		frame.place(relx=.5, rely=.5, anchor="center")
+    		my_score=StringVar(value=score)
+    		label=Label(frame, textvariable= my_score, bg='white', font=("Times", 36, "bold"))
+    		label.place(relheight=1, relwidth=1)
+
+    root =Tk()
+    score=10000
+    root.state('zoomed')
+    app=App(root)
+    root.mainloop()
