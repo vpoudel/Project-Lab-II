@@ -47,7 +47,7 @@ class RepeatingTimer(object):
     def callback(self):
         self.f(*self.args)
         self.start()
-        
+
     def cancel(self):
         self.timer.cancel()
 
@@ -57,14 +57,14 @@ class RepeatingTimer(object):
 
     def is_alive(self):
         return self.timer.is_alive()
-            
+
 class GPIO_pins():
     def Lives(app):
         while(True):
             if(GPIO.input(22)==GPIO.HIGH):  #If a ball is lost, tell display to remove a life
-            app.livesQ.put(-1)
-            time.sleep(1.5)                 #Sleep to ignore extra bouncing
-            
+                app.livesQ.put(-1)
+                time.sleep(1.5)                 #Sleep to ignore extra bouncing
+
     def flippers():
             ##If there is a high to low transition, the flipper bat is up. Wait 200ms then lower PWM.
             ##  else the flipper bat is down, return pwm to 100%
@@ -84,12 +84,15 @@ class GPIO_pins():
                 else:
                     pwm2.ChangeDutyCycle(50)
 
+    def boolTimer(*timeUp):
+        timeUp = False
+
     def pop_bumpers(app):
-        timeup = False
+        timeUp = False
         zeroCount = 0
         lowHigh = True  #Start by looking for a low to high transition (switch pressed)
         highLow = False #Use for after low to high transition detected
-        alarm = RepeatingTimer(0.1,GPIO.boolTimer,timeUp)
+        alarm = RepeatingTimer(0.1,GPIO_pins.boolTimer,timeUp)
 
         while (True):
             if ((GPIO.input(10) or GPIO.input(11) or GPIO.input(12) or GPIO.input(13))==GPIO.HIGH): #if ball touches any of the 4 pop bumpers
@@ -175,7 +178,7 @@ class App():
         self.livesQ = Queue(maxsize=0)
         self.lives = 3                  #Start with 3 lives
         self.lostBall = False           #Show that a ball is lost = false
-        
+
         self.master=master
         scrwidth=master.winfo_screenwidth()
         scrheight = master.winfo_screenheight()
@@ -191,41 +194,41 @@ class App():
         frame.place(relx=.5, rely=.5, anchor="center")
         self.label=Label(frame, text= '', bg='white', font=("Times", 36, "bold"))
         self.label.place(relheight=1, relwidth=1)
-    
+
     def HideMessage(self):
         self.lostBall=False
-        
+
     def score_update(self):
         global score
         tempScore = 0
         tempLives = 0
-        
+
+
         try:
             tempScore = self.pointsQ.get_nowait()
         except:
-            pass    #Do nothing if an exception is raised 
+            pass    #Do nothing if an exception is raised
         score = score + tempScore
 
         try:
             tempLives = self.livesQ.get_nowait()
         except:
             pass
-        
+
         if(tempLives==-1):
             self.lives = self.lives + tempLives
             self.lostBall = True
             t = RepeatingTimer(3,self.HideMessage) #Create and run a timer
             t.start()
-            
+
         if(self.lives==0):
             self.label['text']="YOU LOSE"
         elif(self.lostBall):
             self.label['text']="Ball Lost"
         else:
             self.label['text']=str(score)
-            
-        root.after(1,self.score_update)
-        root.update()
+
+            self.master.update()
 
     def close(self,e):  #e is a variable placeholder that is passed in when using __.bind
         self.master.destroy()
@@ -238,9 +241,7 @@ root.bind("<Escape>", app.close)
 root.after(1,app.score_update)
 
 pop = Thread(target=GPIO_pins.pop_bumpers, args=(app,))
-slingshot = Thread(target=GPIO_pins.slingshots, args=(app,))
 lifeCount = Thread(target=GPIO_pins.Lives, args=(app,))
 pop.start()
-slingshot.start()
 lifeCount.start()
 root.mainloop()
