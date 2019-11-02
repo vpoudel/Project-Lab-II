@@ -42,17 +42,15 @@ class RepeatingTimer(object):
         self.interval = interval
         self.f = f
         self.args = params
-        self.timer = None
+        self.timer = Timer(self.interval,self.callback)
 
     def callback(self):
         self.f(*self.args)
-        self.start()
 
     def cancel(self):
         self.timer.cancel()
 
     def start(self):
-        self.timer = Timer(self.interval,self.callback)
         self.timer.start()
 
     def is_alive(self):
@@ -92,19 +90,24 @@ class GPIO_pins():
         zeroCount = 0
         lowHigh = True  #Start by looking for a low to high transition (switch pressed)
         highLow = False #Use for after low to high transition detected
-        alarm = RepeatingTimer(0.1,GPIO_pins.boolTimer,timeUp)
+        alarm = RepeatingTimer(0.01,GPIO_pins.boolTimer,timeUp)
 
         while (True):
             if ((GPIO.input(10) or GPIO.input(11) or GPIO.input(12) or GPIO.input(13))==GPIO.HIGH): #if ball touches any of the 4 pop bumpers
                 #Nested ifs to track only the transitions we are looking for
+                print("High Detected")
+                print(zeroCount)
                 if(lowHigh):
                     if ((GPIO.input(10) or GPIO.input(11) or GPIO.input(12) or GPIO.input(13))==GPIO.HIGH):
                         lowHigh=False
                         highLow=True
-                        if not(alarm.is_alive()):
+                        if(alarm.is_alive()):
                             alarm.cancel()
+
+                            alarm = RepeatingTimer(0.1,GPIO_pins.boolTimer,timeUp)
                             alarm.start()
                         else:
+                            alarm = RepeatingTimer(0.1,GPIO_pins.boolTimer,timeUp)
                             alarm.start()
 
                 if(highLow):
@@ -115,8 +118,11 @@ class GPIO_pins():
                                                 #a low to high transition has occured
                         if not(alarm.is_alive()):
                             alarm.cancel()
+
+                            alarm = RepeatingTimer(0.1,GPIO_pins.boolTimer,timeUp)
                             alarm.start()
                         else:
+                            alarm = RepeatingTimer(0.1,GPIO_pins.boolTimer,timeUp)
                             alarm.start()
 
                 if(zeroCount>=3):   #Only increase score after a certain number of zeros
@@ -202,7 +208,6 @@ class App():
         global score
         tempScore = 0
         tempLives = 0
-
 
         try:
             tempScore = self.pointsQ.get_nowait()
