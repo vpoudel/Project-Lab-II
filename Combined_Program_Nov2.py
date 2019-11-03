@@ -46,7 +46,7 @@ class RepeatingTimer(object):
 
     def callback(self):
         self.f(*self.args)
-        
+
     def cancel(self):
         self.timer.cancel()
 
@@ -55,14 +55,14 @@ class RepeatingTimer(object):
 
     def is_alive(self):
         return self.timer.is_alive()
-            
+
 class GPIO_pins():
     def Lives(app):
         while(True):
             if(GPIO.input(22)==GPIO.HIGH):  #If a ball is lost, tell display to remove a life
                 app.livesQ.put(-1)
                 time.sleep(1.5)                 #Sleep to ignore extra bouncing
-            
+
     def flippers():
             ##If there is a high to low transition, the flipper bat is up. Wait 200ms then lower PWM.
             ##  else the flipper bat is down, return pwm to 100%
@@ -81,15 +81,29 @@ class GPIO_pins():
                     pwm1.ChangeDutyCycle(50)
                 else:
                     pwm2.ChangeDutyCycle(50)
-    
-    def boolTimer(*timeUp):
-        timeUp = False
-        
-    def pop_bumpers(app,i):
+
+    def pop_bumpers1(app):
         while (True):
-            if (GPIO.input(i)==GPIO.HIGH): #if ball touches the pop bumper on the ith pin
-                print("worked")
+            if (GPIO.input(10)==GPIO.HIGH): #if ball touches the pop bumper on the 10th pin
                 app.pointsQ.put(500)
+
+    def pop_bumpers2(app):
+        while (True):
+            if (GPIO.input(10)==GPIO.HIGH): #if ball touches the pop bumper on the ith pin
+                app.pointsQ.put(500)
+                time.sleep(0.15)
+
+    def pop_bumpers3(app):
+        while (True):
+            if (GPIO.input(10)==GPIO.HIGH): #if ball touches the pop bumper on the ith pin
+                app.pointsQ.put(500)
+                time.sleep(0.15)
+
+    def pop_bumpers4(app):
+        while (True):
+            if (GPIO.input(10)==GPIO.HIGH): #if ball touches the pop bumper on the ith pin
+                app.pointsQ.put(500)
+                time.sleep(0.15)
 
 #    def slingshots():
 #        while (True):
@@ -138,7 +152,7 @@ class App():
         self.livesQ = Queue(maxsize=0)
         self.lives = 3                  #Start with 3 lives
         self.lostBall = False           #Show that a ball is lost = false
-        
+
         self.master=master
         scrwidth=master.winfo_screenwidth()
         scrheight = master.winfo_screenheight()
@@ -154,59 +168,68 @@ class App():
         frame.place(relx=.5, rely=.5, anchor="center")
         self.label=Label(frame, text= '', bg='white', font=("Times", 36, "bold"))
         self.label.place(relheight=1, relwidth=1)
-    
+
     def HideMessage(self):
         self.lostBall=False
-        
+
     def score_update(self):
         global score
         tempScore = 0
         tempLives = 0
-        
+
+        #while(True):
         try:
-            tempScore = self.pointsQ.get_nowait()
+            tempScore = self.pointsQ.get()
         except:
-            pass    #Do nothing if an exception is raised 
+            pass    #Do nothing if an exception is raised
+
         score = score + tempScore
 
         try:
             tempLives = self.livesQ.get_nowait()
         except:
             pass
-        
+
         if(tempLives==-1):
             self.lives = self.lives + tempLives
             self.lostBall = True
             t = RepeatingTimer(3,self.HideMessage) #Create and run a timer
             t.start()
-            
+
         if(self.lives==0):
             self.label['text']="YOU LOSE"
         elif(self.lostBall):
             self.label['text']="Ball Lost"
         else:
             self.label['text']=str(score)
-                
-        self.master.update()
+
+        self.label['text']=str(score)
+        try:
+            self.master.after(10,self.score_update)
+        except:
+            pass
+        #self.master.update_idletasks()
+        #self.master.update()
 
     def close(self,e):  #e is a variable placeholder that is passed in when using __.bind
         self.master.destroy()
 
 
 root = Tk()
-root.attributes("-fullscreen", True)
 app = App(root)
+root.attributes("-fullscreen", True)
 root.bind("<Escape>", app.close)
-root.after(1,app.score_update)
 
-popOne = Thread(target=GPIO_pins.pop_bumpers, args=(app,10,))
-popTwo = Thread(target=GPIO_pins.pop_bumpers, args=(app,11))
-popThree = Thread(target=GPIO_pins.pop_bumpers, args=(app,12,))
-popFour = Thread(target=GPIO_pins.pop_bumpers, args=(app,13,))
+popOne = Thread(target=GPIO_pins.pop_bumpers1, args=(app,))
+popTwo = Thread(target=GPIO_pins.pop_bumpers2, args=(app,))
+popThree = Thread(target=GPIO_pins.pop_bumpers3, args=(app,))
+popFour = Thread(target=GPIO_pins.pop_bumpers4, args=(app,))
 lifeCount = Thread(target=GPIO_pins.Lives, args=(app,))
 popOne.start()
-popTwo.start()
-popThree.start()
-popFour.start()
+#popTwo.start()
+#popThree.start()
+#popFour.start()
 lifeCount.start()
+
+root.after(10,app.score_update)
 root.mainloop()
