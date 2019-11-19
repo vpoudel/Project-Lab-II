@@ -1,30 +1,32 @@
-from threading import Thread, Timer
-import time
-from queue import Queue
 
+from threading import Thread
+import time
 #all reqd for gui class
 from tkinter import * #import GUI library
 import tkinter.font #import tkinter font
-from PIL import Image, ImageTk
+from PIL import Image
+from PIL import ImageTk
 
 score=0
 class GPIO_pins():
-    def pop_bumpers(app):
+    def pop_bumpers():
         while (True):
-            time.sleep(1)
-            app.pointsQ.put(50)
+            time.sleep(5)
+            global score
+            score=score+50
 
-    def slingshots(app):
-        while(True):
-            time.sleep(2)
-            app.pointsQ.put(3)
+    def slingshots():
+        while (True):
+            time.sleep(5)
+            global score
+            score=score+50
+    if __name__=='__main__': #start threads asynchronously
+        Thread(target=pop_bumpers).start()
+        Thread(target=slingshots).start()
 
 class App():
     def __init__(self, master):
         #initialization
-        self.pointsQ = Queue(maxsize=0) #infinite size queue
-        self.pointsQ.put(50)
-        
         self.master=master
         scrwidth=master.winfo_screenwidth()
         scrheight = master.winfo_screenheight()
@@ -43,29 +45,19 @@ class App():
 
     def score_update(self):
         global score
-        temp = 0
-
-        try:
-            temp = self.pointsQ.get_nowait()
-        except:
-            pass    #Do nothing if an exception is raised 
-
-        score = score + temp
         self.label['text']=str(score)
         root.after(1,self.score_update)
         root.update()
-
-    def close(self,e):  #e is a variable placeholder that is passed in when using __.bind
+    
+    def close(self,e):
         self.master.destroy()
 
-root = Tk()
-root.attributes("-fullscreen", True)
-app = App(root)
-root.bind("<Escape>", app.close)
-root.after(1,app.score_update)
 
-pop = Thread(target=GPIO_pins.pop_bumpers, args=(app,))
-slingshot = Thread(target=GPIO_pins.slingshots, args=(app,))
-pop.start()
-slingshot.start()
+root =Tk()
+root.geometry("800x500")
+#root.state('zoomed')
+#root.attributes("-fullscreen", True)
+app=App(root)
+root.bind('<Escape>',app.close)
+root.after(1,app.score_update)
 root.mainloop()
