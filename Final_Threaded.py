@@ -1,6 +1,7 @@
 import RPi._GPIO as GPIO
 from threading import Thread
 import time
+#import sys
 
 #all reqd for gui class
 import tkinter as tk  #import GUI library
@@ -32,22 +33,28 @@ GPIO.setup(chan_list2, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)     #Slingshot 1 Inp
 pygame.mixer.pre_init(44100, -16, 2, 4096) #frequency, size, channels, buffersize
 pygame.mixer.init() #turn all of pygame on.
 
+
+#high score display
+file=open("score.txt","r")
+topscore=(file.readline())
+topscore=int(topscore)
+file.close()
+
 score=0
 life=3
+curr_score=0
 class GPIO_():
     def Lives(self):
         while(True):
+            global life,score
             if(GPIO.input(23)==GPIO.HIGH):  #If a ball is lost, tell display to remove a life
-                global life,score
                 if (life>0):
                     life=life-1
-                else:
-                    life=0
+                elif life==0:
+                    curr_score=score
                     score=0
+                    life=0
                 time.sleep(0.5)
-            if ((GPIO.input(3)==GPIO.HIGH) & life==0 & score==0):
-                time.sleep(4)
-                life=3
                 
 
     def flippers(self):
@@ -104,7 +111,15 @@ class App():
         tk.Canvas(master).pack()
         self.back_image=ImageTk.PhotoImage(Image.open('wall.jpg'))
         tk.Label(master, image=self.back_image).place(relwidth=1,relheight=1)
-
+        #label for text Score
+        scorelabel=tk.Label(master,text='Score',fg='white',bg='black',font=("Times", 45, "bold"))
+        scorelabel.place(relx=0.46,rely=0.39)
+        
+        #label for top Score
+        texta=tk.Label(master,text='Top Score: ',fg='white',bg='black',font=("Times", 45, "bold"))
+        texta.place(relx=0.4,rely=0)
+        self.top_score_label=tk.Label(master,text='',fg='white',bg='black',font=("Times", 45, "bold"))
+        self.top_score_label.place(relx=0.55,rely=0)
         #label for lives
         frame1=tk.Frame(master, height=scrheight/7, width=scrwidth/8, bg='white', bd=5)
         frame1.place(relx=1.0, rely=0.0, anchor="ne")
@@ -118,13 +133,36 @@ class App():
         self.label2.place(relheight=1, relwidth=1)
 
     def score_update(self):
-        global life
-        global score
-        self.label1['text']=str(life)
+        global life,score,topscore
+        self.label1['text']='Lives: '+str(life)
         self.label2['text']=str(score)
-        root.after(100,app.score_update)
+        if (life==0 & score==0):
+            self.label1['text']='Lives: '+ str(life)
+            self.label2['text']=str(score)
+            popup = tk.Tk()
+            popup.wm_title("Pinball")
+            popup.geometry("%dx%d+0+0" % (w, h))
+            label = tk.Label(popup, text="Game Over", font=("Times", 100, "bold"))
+            label.pack(side="top", fill="x", pady=10)
+            popup.after(3000,lambda:popup.destroy())
+            life=3
+        if (score==0):
+            curr_score=1000
+            if curr_score>topscore:
+                file1=open("score.txt","w")
+                str_curr_score=str(curr_score)
+                file1.write(str_curr_score)
+                file1.close()
+                topscore=curr_score
+            self.top_score_label['text']=str(topscore)
+        try:
+            root.after(100,app.score_update)
+        except:
+            pass
 
-        
+    def close_app(self):
+        root.destroy()
+        exit()
 
 root = tk.Tk()
 app=App(root)
@@ -136,6 +174,7 @@ if __name__=="__main__":
     Thread(target=GPIO_().flippers).start()
     Thread(target=GPIO_().Lives).start()
 app.score_update()
+root.protocol('WM_DELETE_WINDOW',app.close_app)
 root.mainloop()
 
 
